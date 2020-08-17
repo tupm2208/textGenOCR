@@ -107,3 +107,4 @@ tests
 trdg/dicts/*
 trdg/fonts/*
 samples
+run.sh

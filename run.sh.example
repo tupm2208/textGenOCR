@@ -1,0 +1,10 @@
+export PYTHONPATH=.
+./trdg/bin/trdg -c 100 \
+                -w 1 \
+                -f 45 \
+                -k 5 \
+                -l dlo_address \
+                -na 2 \
+                -t 4 \
+                -b 1 \
+                --output_dir out
