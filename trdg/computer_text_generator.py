@@ -2,9 +2,10 @@ import random as rnd
 
 from PIL import Image, ImageColor, ImageFont, ImageDraw, ImageFilter
 from .utils import load_existed_folder
+from .config import charset_folder, existed_image_folder
 
 
-existed_char, charset_flag = load_existed_folder('/home/tupm/datasets/handwriting/683521_1218106_compressed_CASIA-HWDB_Train/existed', '/home/tupm/datasets/handwriting/char_mapping_general_3663.pkl')
+existed_char, charset_flag = load_existed_folder(existed_image_folder, charset_folder)
 
 
 def generate(text, font, text_color, font_size, orientation, space_width, fit):
