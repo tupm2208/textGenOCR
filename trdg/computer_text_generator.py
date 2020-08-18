@@ -87,8 +87,13 @@ def _generate_existed_text(text, font, text_color, font_size, space_width, fit):
 
         if charset_flag[w] is True:
 
-            char_path = rnd.choice(existed_char[w])
-            img_char = Image.open(char_path)
+            while True:
+                try:
+                    char_path = rnd.choice(existed_char[w])
+                    img_char = Image.open(char_path)
+                    break
+                except Exception:
+                    pass
             # img_char.getbbox()
             img_char = img_char.crop(img_char.getbbox())
             c_w, c_h = img_char.size
