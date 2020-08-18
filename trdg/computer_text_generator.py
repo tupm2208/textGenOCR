@@ -61,9 +61,7 @@ def _generate_existed_text(text, font, text_color, font_size, space_width, fit):
     image_font = ImageFont.truetype(font=font, size=font_size)
     words = text.split(" ")
     chars = list(text)
-    # space_width = image_font.getsize(" ")[0] * space_width
 
-    # words_width = [image_font.getsize(w)[0] for w in words]
     chars_width = [image_font.getsize(w)[0] for w in chars]
     text_width = sum(chars_width) + int(space_width) * (len(chars) - 1)
     text_height = max([image_font.getsize(w)[1] for w in chars])
@@ -80,6 +78,8 @@ def _generate_existed_text(text, font, text_color, font_size, space_width, fit):
         rnd.randint(min(c1[1], c2[1]), max(c1[1], c2[1])),
         rnd.randint(min(c1[2], c2[2]), max(c1[2], c2[2])),
     )
+
+    current_x = 0
 
     for i, w in enumerate(chars):
         x, y = (sum(chars_width[0:i]) + i * int(space_width), 0)
@@ -108,15 +108,20 @@ def _generate_existed_text(text, font, text_color, font_size, space_width, fit):
             img_char = img_char.resize((width, height), Image.BICUBIC)
             
             # print(char_path,(width, height), img_char.size)
-            txt_img.paste(img_char, (x, int((text_height-height)/2)))
+            txt_img.paste(img_char, (current_x, int((text_height-height)/2)))
             txt_draw = ImageDraw.Draw(txt_img)
         else:
             txt_draw.text(
-                (x, y),
+                (current_x, y),
                 w,
                 fill=fill,
                 font=image_font,
+                spacing=0
             )
+        
+        current_x += width
+    
+    txt_img = txt_img.crop((0, 0, current_x, text_height))
 
     if fit:
         return txt_img.crop(txt_img.getbbox())

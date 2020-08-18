@@ -7,4 +7,5 @@ export PYTHONPATH=.
                 -na 2 \
                 -t 4 \
                 -b 1 \
-                --output_dir out
+                --output_dir out \
+                -sw 0
