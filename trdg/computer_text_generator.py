@@ -115,8 +115,7 @@ def _generate_existed_text(text, font, text_color, font_size, space_width, fit):
                 (current_x, y),
                 w,
                 fill=fill,
-                font=image_font,
-                spacing=0
+                font=image_font
             )
         
         current_x += width

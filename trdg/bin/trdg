@@ -373,7 +373,9 @@ def main():
         ) as f:
             for i in range(string_count):
                 file_name = str(i) + "." + args.extension
-                f.write("{}/{} {}\n".format(str(i//1000), file_name, strings[i]))
+                data = strings[i].split()
+                data = "".join(data)
+                f.write("{}/{} {}\n".format(str(i//1000), file_name, data))
 
 
 if __name__ == "__main__":
