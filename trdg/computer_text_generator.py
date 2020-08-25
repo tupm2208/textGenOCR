@@ -58,6 +58,15 @@ def _generate_horizontal_text(text, font, text_color, font_size, space_width, fi
 
 
 def _generate_existed_text(text, font, text_color, font_size, space_width, fit):
+    new_txt = text
+    nb_space = rnd.randint(0, 5)
+    if len(new_txt) > 2:
+        if nb_space > 0:
+            for i in range(nb_space):
+                inserted_idx = rnd.randint(1, len(new_txt) - 1)
+                new_txt = new_txt[:inserted_idx] + ' ' + new_txt[inserted_idx:]
+    new_txt = new_txt.strip()
+    text = new_txt
     image_font = ImageFont.truetype(font=font, size=font_size)
     words = text.split(" ")
     chars = list(text)
@@ -66,7 +75,7 @@ def _generate_existed_text(text, font, text_color, font_size, space_width, fit):
     text_width = sum(chars_width) + int(space_width) * (len(chars) - 1)
     text_height = max([image_font.getsize(w)[1] for w in chars])
 
-    txt_img = Image.new("RGBA", (text_width, text_height), (0, 0, 0, 0))
+    txt_img = Image.new("RGBA", (text_width+300, text_height), (0, 0, 0, 0))
 
     txt_draw = ImageDraw.Draw(txt_img)
 
@@ -84,6 +93,7 @@ def _generate_existed_text(text, font, text_color, font_size, space_width, fit):
     for i, w in enumerate(chars):
         x, y = (sum(chars_width[0:i]) + i * int(space_width), 0)
         width, height = image_font.getsize(w)[:2]
+        
 
         if charset_flag[w] is True:
 
@@ -94,9 +104,10 @@ def _generate_existed_text(text, font, text_color, font_size, space_width, fit):
                     break
                 except Exception:
                     pass
-            # img_char.getbbox()
-            img_char = img_char.crop(img_char.getbbox())
+            bbox = img_char.getbbox()
+            img_char = img_char.crop(bbox)
             c_w, c_h = img_char.size
+            # print(img_char.size)
             new_ch = int(c_h * width/c_w)
 
             if new_ch > text_height:
@@ -104,11 +115,10 @@ def _generate_existed_text(text, font, text_color, font_size, space_width, fit):
                 width = new_cw
             else:
                 height = new_ch
-            
+            # width = int(c_w * height/c_h)
             img_char = img_char.resize((width, height), Image.BICUBIC)
-            
-            # print(char_path,(width, height), img_char.size)
             txt_img.paste(img_char, (current_x, int((text_height-height)/2)))
+            # txt_img.paste(img_char, (current_x, rnd.randint(0, text_height-height)))
             txt_draw = ImageDraw.Draw(txt_img)
         else:
             txt_draw.text(
@@ -121,7 +131,6 @@ def _generate_existed_text(text, font, text_color, font_size, space_width, fit):
         current_x += width
     
     txt_img = txt_img.crop((0, 0, current_x, text_height))
-
     if fit:
         return txt_img.crop(txt_img.getbbox())
     else:
@@ -154,7 +163,7 @@ def _generate_vertical_text(text, font, text_color, font_size, space_width, fit)
 
     for i, c in enumerate(text):
         txt_draw.text((0, sum(char_heights[0:i])), c, fill=fill, font=image_font)
-
+    
     if fit:
         return txt_img.crop(txt_img.getbbox())
     else:

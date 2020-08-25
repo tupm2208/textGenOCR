@@ -105,7 +105,7 @@ def random(image, vertical=False, horizontal=False):
         Apply a random distorsion on one or both of the specified axis
     """
 
-    max_offset = int(image.height ** 0.4)
+    max_offset = int(image.size[1] ** 0.4)
 
     return _apply_func_distorsion(
         image, vertical, horizontal, max_offset, (lambda x: rnd.randint(0, max_offset))

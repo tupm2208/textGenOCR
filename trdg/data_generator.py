@@ -1,9 +1,12 @@
 import os
 import random as rnd
+import random
 
 from PIL import Image, ImageFilter
 import cv2
 from .utils import load_existed_folder
+from skimage.util import random_noise
+import numpy as np
 
 from trdg import (
     computer_text_generator,
@@ -54,7 +57,11 @@ class FakeTextDataGenerator(object):
     ):
         image = None
 
+
         margin_top, margin_left, margin_bottom, margin_right = margins
+
+        margin_top = rnd.randint(0, 7)
+        margin_bottom = rnd.randint(0, 7-margin_top)
         horizontal_margin = margin_left + margin_right
         vertical_margin = margin_top + margin_bottom
 
@@ -171,7 +178,51 @@ class FakeTextDataGenerator(object):
                 (background_width - new_text_width - margin_right, margin_top),
                 resized_img,
             )
+        ##################################
+        # Add Noise                      #
+        ##################################
+        """
+         - 'gaussian'  Gaussian-distributed additive noise.
+        - 'localvar'  Gaussian-distributed additive noise, with specified
+                      local variance at each point of `image`.
+        - 'poisson'   Poisson-distributed noise generated from the data.
+        - 'salt'      Replaces random pixels with 1.
+        - 'pepper'    Replaces random pixels with 0 (for unsigned images) or
+                      -1 (for signed images).
+        - 's&p'       Replaces random pixels with either 1 or `low_val`, where
+                      `low_val` is 0 for unsigned images or -1 for signed
+                      images.
+        - 'speckle'   Multiplicative noise using out = image + n*image, where
+                      n is uniform noise with specified mean & variance.
+        """
 
+        # im_arr = np.asarray(background)
+        # NOISES = ['gaussian', 'localvar', 'poisson', 'salt', 'pepper', 's&p', 'speckle']
+        
+        # if random.choice([1]) == 1:
+        #     final_image = random_noise(im_arr, mode=random.choice(NOISES[:4]))
+        #     final_image = (255 * final_image).astype(np.uint8)
+        #     final_image = Image.fromarray(final_image)
+        #     if random.choice([0, 1]) == 1:
+        #         final_image = final_image.filter(
+        #             ImageFilter.GaussianBlur(
+        #                 radius=(blur if not random_blur else random.randint(2, 3))
+        #             )
+        #         )
+        # elif random.choice([0, 1, 1, 1]) == 0:
+        #     final_image = background
+        #     ##################################
+        #     # Apply gaussian blur            #
+        #     ##################################
+        #     final_image = final_image.filter(
+        #         ImageFilter.GaussianBlur(
+        #             radius=(blur if not random_blur else random.randint(0, blur))
+        #         )
+        #     )
+        # else:
+        #     final_image = background
+
+        final_image = background
         ##################################
         # Apply gaussian blur #
         ##################################
