@@ -36,79 +36,82 @@ def _cumsum(points):
     return np.concatenate([sums, points[:, 2:]], axis=1)
 
 
-def _sample_text(sess, args_text, translation):
-    # Original creator said it helps (https://github.com/Grzego/handwriting-generation/issues/3)
-    args_text += " "
+def _sample_text(sess, args_text, translation, style=None):
+    style = 2
+    if style is not None:
+        with open('/home/tupm/projects/handwriting-generation/data/styles.pkl', 'rb') as file:
+            styles = pickle.load(file)
 
-    fields = [
-        "coordinates",
-        "sequence",
-        "bias",
-        "e",
-        "pi",
-        "mu1",
-        "mu2",
-        "std1",
-        "std2",
-        "rho",
-        "window",
-        "kappa",
-        "phi",
-        "finish",
-        "zero_states",
-    ]
-    vs = namedtuple("Params", fields)(*[tf.get_collection(name)[0] for name in fields])
+        if style > len(styles[0]):
+            raise ValueError('Requested style is not in style list')
 
-    text = np.array([translation.get(c, 0) for c in args_text])
-    sequence = np.eye(len(translation), dtype=np.float32)[text]
-    sequence = np.expand_dims(
-        np.concatenate([sequence, np.zeros((1, len(translation)))]), axis=0
+        style = [styles[0][style], styles[1][style]]
+    fields = ['coordinates', 'sequence', 'bias', 'e', 'pi', 'mu1', 'mu2', 'std1', 'std2',
+              'rho', 'window', 'kappa', 'phi', 'finish', 'zero_states']
+    vs = namedtuple('Params', fields)(
+        *[tf.get_collection(name)[0] for name in fields]
     )
 
-    coord = np.array([0.0, 0.0, 1.0])
+    text = np.array([translation.get(c, 0) for c in args_text])
+    coord = np.array([0., 0., 1.])
     coords = [coord]
+
+    # Prime the model with the author style if requested
+    prime_len, style_len = 0, 0
+    if style is not None:
+        # Priming consist of joining to a real pen-position and character sequences the synthetic sequence to generate
+        #   and set the synthetic pen-position to a null vector (the positions are sampled from the MDN)
+        style_coords, style_text = style
+        prime_len = len(style_coords)
+        style_len = len(style_text)
+        prime_coords = list(style_coords)
+        coord = prime_coords[0] # Set the first pen stroke as the first element to process
+        text = np.r_[style_text, text] # concatenate on 1 axis the prime text + synthesis character sequence
+        sequence_prime = np.eye(len(translation), dtype=np.float32)[style_text]
+        sequence_prime = np.expand_dims(np.concatenate([sequence_prime, np.zeros((1, len(translation)))]), axis=0)
+    sequence = np.eye(len(translation), dtype=np.float32)[text]
+    sequence = np.expand_dims(np.concatenate([sequence, np.zeros((1, len(translation)))]), axis=0)
 
     phi_data, window_data, kappa_data, stroke_data = [], [], [], []
     sess.run(vs.zero_states)
-    for s in range(1, 60 * len(args_text) + 1):
-        e, pi, mu1, mu2, std1, std2, rho, finish, phi, window, kappa = sess.run(
-            [
-                vs.e,
-                vs.pi,
-                vs.mu1,
-                vs.mu2,
-                vs.std1,
-                vs.std2,
-                vs.rho,
-                vs.finish,
-                vs.phi,
-                vs.window,
-                vs.kappa,
-            ],
-            feed_dict={
-                vs.coordinates: coord[None, None, ...],
-                vs.sequence: sequence,
-                vs.bias: 1.0,
-            },
-        )
-        phi_data += [phi[0, :]]
-        window_data += [window[0, :]]
-        kappa_data += [kappa[0, :]]
-        # ---
-        g = np.random.choice(np.arange(pi.shape[1]), p=pi[0])
-        coord = _sample(
-            e[0, 0], mu1[0, g], mu2[0, g], std1[0, g], std2[0, g], rho[0, g]
-        )
-        coords += [coord]
-        stroke_data += [
-            [mu1[0, g], mu2[0, g], std1[0, g], std2[0, g], rho[0, g], coord[2]]
-        ]
+    sequence_len = len(args_text) + style_len
+    for s in range(1, 60 * sequence_len + 1):
+        is_priming = s < prime_len
+        # is_priming = True
 
-        if finish[0, 0] > 0.8:
-            break
+        # print('\r[{:5d}] sampling... {}'.format(s, 'priming' if is_priming else 'synthesis'), end='')
+
+        e, pi, mu1, mu2, std1, std2, rho, \
+        finish, phi, window, kappa = sess.run([vs.e, vs.pi, vs.mu1, vs.mu2,
+                                               vs.std1, vs.std2, vs.rho, vs.finish,
+                                               vs.phi, vs.window, vs.kappa],
+                                              feed_dict={
+                                                  vs.coordinates: coord[None, None, ...],
+                                                  vs.sequence: sequence_prime if is_priming else sequence,
+                                                  vs.bias: 1.0
+                                              })
+
+        if is_priming:
+            # Use the real coordinate if priming
+            coord = prime_coords[s]
+        else:
+            # Synthesis mode
+            phi_data += [phi[0, :]]
+            window_data += [window[0, :]]
+            kappa_data += [kappa[0, :]]
+            # ---
+            g = np.random.choice(np.arange(pi.shape[1]), p=pi[0])
+            coord = _sample(e[0, 0], mu1[0, g], mu2[0, g],
+                           std1[0, g], std2[0, g], rho[0, g])
+            coords += [coord]
+            stroke_data += [[mu1[0, g], mu2[0, g], std1[0, g], std2[0, g], rho[0, g], coord[2]]]
+
+            if finish[0, 0] > 0.8:
+                # print('\nFinished sampling!\n')
+                break
 
     coords = np.array(coords)
-    coords[-1, 2] = 1.0
+    coords[-1, 2] = 1.
 
     return phi_data, window_data, kappa_data, stroke_data, coords
 
@@ -127,6 +130,13 @@ def _crop_white_borders(image):
     image_data_new = image_data[
         cropBox[0] : cropBox[1] + 1, cropBox[2] : cropBox[3] + 1, :
     ]
+
+    img_h = image_data_new.shape[0]
+
+    if rnd.choice([0, 0, 0, 1]) == 0:
+        blank_image = np.ones((img_h, 45*rnd.choice([1, 1, 2, 5, 5, 6, 7]), 3), dtype=np.uint8) * 255
+
+        image_data_new = np.concatenate((blank_image, image_data_new ), axis=1)
 
     return Image.fromarray(image_data_new)
 
