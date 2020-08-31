@@ -93,6 +93,19 @@ def _generate_existed_text(text, font, text_color, font_size, space_width, fit):
     for i, w in enumerate(chars):
         x, y = (sum(chars_width[0:i]) + i * int(space_width), 0)
         width, height = image_font.getsize(w)[:2]
+
+        start_y = 0
+
+        if rnd.choice([0, 0, 0, 1]) == 1:
+        # if True:
+            start_y = rnd.randint(int(0.2*height), int(0.3*height))
+            # if w in ['・', 'ー']:
+            #     print(start_y)
+            cr_height = height
+            cr_width = width
+            height = cr_height - start_y
+
+            width = int(cr_width* height/cr_height)
         
 
         if charset_flag[w] is True:
@@ -116,17 +129,33 @@ def _generate_existed_text(text, font, text_color, font_size, space_width, fit):
             else:
                 height = new_ch
             # width = int(c_w * height/c_h)
-            img_char = img_char.resize((width, height), Image.BICUBIC)
-            txt_img.paste(img_char, (current_x, int((text_height-height)/2)))
-            # txt_img.paste(img_char, (current_x, rnd.randint(0, text_height-height)))
-            txt_draw = ImageDraw.Draw(txt_img)
+            # img_char = img_char.resize((width, height), Image.BICUBIC)
+            # txt_img.paste(img_char, (current_x, int((text_height-height + start_y)/2)))
+            # # txt_img.paste(img_char, (current_x, rnd.randint(0, text_height-height)))
+            # txt_draw = ImageDraw.Draw(txt_img)
+            start_y = int((text_height-height + start_y)/2)
         else:
-            txt_draw.text(
-                (current_x, y),
+            img_char = Image.new("RGBA", image_font.getsize(w)[:2], (0, 0, 0, 0))
+            char_img_draw = ImageDraw.Draw(img_char)
+
+            char_img_draw.text(
+                (0, 0),
                 w,
                 fill=fill,
                 font=image_font
             )
+
+            # bbox = img_char.getbbox()
+            # img_char = img_char.crop(bbox)
+            
+        if rnd.choice([0, 0, 0, 0, 1]) == 1:
+        # if True:
+            img_char = img_char.rotate(rnd.randint(1, 5), expand=True, fillcolor=255)
+        img_char = img_char.resize((width, height), Image.BICUBIC)
+
+        txt_img.paste(img_char, (current_x, start_y))
+        # txt_img.paste(img_char, (current_x, rnd.randint(0, text_height-height)))
+        txt_draw = ImageDraw.Draw(txt_img)
         
         current_x += width
     

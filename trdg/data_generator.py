@@ -63,8 +63,15 @@ class FakeTextDataGenerator(object):
         margin_top = rnd.randint(0, 7)
         margin_bottom = rnd.randint(0, 7-margin_top)
         horizontal_margin = margin_left + margin_right
-        vertical_margin = margin_top + margin_bottom
+        
 
+        if rnd.randint(0, 10) == 0:
+            margin_top = 0
+        
+        if rnd.randint(0, 10) == 0:
+            margin_bottom = 0
+
+        vertical_margin = margin_top + margin_bottom
         ##########################
         # Create picture of text #
         ##########################
@@ -245,7 +252,6 @@ class FakeTextDataGenerator(object):
         else:
             print("{} is not a valid name format. Using default.".format(name_format))
             image_name = "{}_{}.{}".format(text, str(index), extension)
-
         # Save the image
         if out_dir is not None:
             image_path = os.path.join(out_dir, image_name)

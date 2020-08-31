@@ -11,6 +11,14 @@ from PIL import Image, ImageColor
 from collections import namedtuple
 
 
+# sess = None
+
+# with tf.device(0):
+#     sess = tf.Session()
+#     saver = tf.train.import_meta_graph("trdg/handwritten_model/model-29.meta")
+#     saver.restore(sess, "trdg/handwritten_model/model-29")
+
+
 def _sample(e, mu1, mu2, std1, std2, rho):
     cov = np.array([[std1 * std1, std1 * std2 * rho], [std1 * std2 * rho, std2 * std2]])
     mean = np.array([mu1, mu2])
@@ -37,9 +45,9 @@ def _cumsum(points):
 
 
 def _sample_text(sess, args_text, translation, style=None):
-    style = 2
+    style = 3
     if style is not None:
-        with open('/home/tupm/projects/handwriting-generation/data/styles.pkl', 'rb') as file:
+        with open('data/styles.pkl', 'rb') as file:
             styles = pickle.load(file)
 
         if style > len(styles[0]):
@@ -48,8 +56,10 @@ def _sample_text(sess, args_text, translation, style=None):
         style = [styles[0][style], styles[1][style]]
     fields = ['coordinates', 'sequence', 'bias', 'e', 'pi', 'mu1', 'mu2', 'std1', 'std2',
               'rho', 'window', 'kappa', 'phi', 'finish', 'zero_states']
+    # for name in fields:
+    #     print(name, tf.get_collection(name))
     vs = namedtuple('Params', fields)(
-        *[tf.get_collection(name)[0] for name in fields]
+        *[tf.compat.v1.get_collection(name)[0] for name in fields]
     )
 
     text = np.array([translation.get(c, 0) for c in args_text])
@@ -157,15 +167,29 @@ def _join_images(images):
     return compound_image
 
 
+class HandwritingSession():
+    def __init__(self):
+        config = tf.ConfigProto(device_count={'GPU':0})
+        self.sess = tf.Session(config=config)
+        saver = tf.train.import_meta_graph("trdg/handwritten_model/model-29.meta")
+        saver.restore(self.sess, "trdg/handwritten_model/model-29")
+
+
+
+
 def generate(text, text_color):
     with open(os.path.join("trdg/handwritten_model", "translation.pkl"), "rb") as file:
         translation = pickle.load(file)
 
-    config = tf.ConfigProto(device_count={"GPU": 0})
-    tf.reset_default_graph()
+    # config = tf.ConfigProto(device_count={'GPU':0})
+    # config.gpu_options.allow_growth = True
+    # tf.reset_default_graph()
+
     with tf.Session(config=config) as sess:
+    # if True:
         saver = tf.train.import_meta_graph("trdg/handwritten_model/model-29.meta")
         saver.restore(sess, "trdg/handwritten_model/model-29")
+
         images = []
         colors = [ImageColor.getrgb(c) for c in text_color.split(",")]
         c1, c2 = colors[0], colors[-1]

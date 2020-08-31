@@ -30,7 +30,7 @@ def load_fonts(lang):
             os.path.join(os.path.dirname(__file__), "fonts/cn", font)
             for font in os.listdir(os.path.join(os.path.dirname(__file__), "fonts/cn"))
         ]
-    elif lang in ['dlo_address', 'pass']:
+    elif lang in ['dlo_address', 'pass', 'dlo_address_new', 'dlo_address_new2']:
         return [
             os.path.join(os.path.dirname(__file__), "fonts/pass", font)
             for font in os.listdir(os.path.join(os.path.dirname(__file__), "fonts/pass"))
